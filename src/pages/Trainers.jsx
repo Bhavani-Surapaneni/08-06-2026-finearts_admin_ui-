@@ -1,398 +1,607 @@
-import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
-  HiCheck,
-  HiX,
-  HiBan,
-  HiPencil,
-  HiEye,
-  HiStar,
-  HiUsers,
+HiPencil,
+HiTrash,
+HiPlus,
 } from "react-icons/hi";
+
 import DataTable from "../components/ui/DataTable";
 import Modal from "../components/ui/Modal";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import FormInput from "../components/ui/FormInput";
+
 import {
-  approveTrainer,
-  rejectTrainer,
-  suspendTrainer,
-  updateTrainer,
-  deleteTrainer,
-} from "../redux/slices/trainersSlice";
+getInstituteTrainers,
+createInstituteTrainer,
+updateInstituteTrainer,
+deleteInstituteTrainer,
+} from "../services/instituteService";
 
-export default function Trainers() {
-  const dispatch = useDispatch();
-  const { trainers } = useSelector((state) => state.trainers);
+export default function InstituteTrainers() {
+const [trainers, setTrainers] =
+useState([]);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [viewingTrainer, setViewingTrainer] = useState(null);
-  const [editingTrainer, setEditingTrainer] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    skill: "",
-    specialty: "",
-    experience: "",
-    bio: "",
-  });
+const [isModalOpen, setIsModalOpen] =
+useState(false);
 
-  const columns = [
-    {
-      key: "name",
-      label: "Name",
-      render: (value, row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full gradient-bg flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">
-              {value
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </span>
-          </div>
-          <div>
-            <p className="font-medium">{value}</p>
-            {row.verified && (
-              <span className="text-xs text-green-400">✓ Verified</span>
-            )}
-          </div>
-        </div>
-      ),
-    },
-    { key: "skill", label: "Skill" },
-    {
-      key: "rating",
-      label: "Rating",
-      render: (value) => (
-        <div className="flex items-center gap-1">
-          <HiStar className="w-4 h-4 star-rating" />
-          <span className="font-medium">{value}</span>
-        </div>
-      ),
-    },
-    {
-      key: "students",
-      label: "Students",
-      render: (value) => (
-        <div className="flex items-center gap-1">
-          <HiUsers className="w-4 h-4 text-gray-400" />
-          <span>{value}</span>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (value) => <Badge variant={value}>{value}</Badge>,
-    },
-  ];
+const [editingTrainer, setEditingTrainer] =
+useState(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+const [deleteModalOpen, setDeleteModalOpen] =
+useState(false);
 
-    if (editingTrainer) {
-      dispatch(updateTrainer({ ...editingTrainer, ...formData }));
-      toast.success("Trainer updated successfully!");
+const [trainerToDelete, setTrainerToDelete] =
+useState(null);
+
+const [formData, setFormData] =
+useState({
+full_name: "",
+email: "",
+phone_number: "",
+bio: "",
+experience_years: "",
+specialty: "",
+languages: "",
+skills: "",
+certifications: "",
+schedule: "",
+upi_id: "",
+total_students: "",
+max_students: "",
+profile_image: null,
+certificate: null,
+qr_image: null,
+});
+
+const token =
+localStorage.getItem("token");
+
+const fetchTrainers = async () => {
+try {
+const res =
+await getInstituteTrainers(
+token
+);
+
+
+  setTrainers(
+    res.data || []
+  );
+} catch (e) {
+  toast.error(
+    e.response?.data?.message ||
+      "Failed to load trainers"
+  );
+}
+
+
+};
+
+useEffect(() => {
+fetchTrainers();
+}, []);
+
+const columns = [
+{
+key: "profile_image",
+label: "IMAGE",
+render: (value) => ( <img
+       src={value}
+       alt=""
+       className="w-14 h-14 rounded-lg object-cover"
+     />
+),
+},
+{
+key: "full_name",
+label: "NAME",
+},
+{
+key: "specialty",
+label: "SPECIALTY",
+},
+{
+key: "experience_years",
+label: "EXPERIENCE",
+},
+{
+key: "phone_number",
+label: "PHONE",
+},
+{
+key: "total_students",
+label: "STUDENTS",
+},
+{
+key: "approval_status",
+label: "STATUS",
+render: (value) => ( <Badge
+       variant={value?.toLowerCase()}
+     >
+{value} </Badge>
+),
+},
+];
+
+const handleCreate = () => {
+setEditingTrainer(null);
+
+setFormData({
+  full_name: "",
+  email: "",
+  phone_number: "",
+  bio: "",
+  experience_years: "",
+  specialty: "",
+  languages: "",
+  skills: "",
+  certifications: "",
+  schedule: "",
+  upi_id: "",
+  total_students: "",
+  max_students: "",
+  profile_image: null,
+  certificate: null,
+  qr_image: null,
+});
+
+setIsModalOpen(true);
+
+
+};
+
+const handleEdit = (trainer) => {
+setEditingTrainer(trainer);
+
+
+setFormData({
+  ...trainer,
+  profile_image: null,
+  certificate: null,
+  qr_image: null,
+});
+
+setIsModalOpen(true);
+
+
+};
+
+const handleDeleteClick = (
+id
+) => {
+setTrainerToDelete(id);
+setDeleteModalOpen(true);
+};
+
+const confirmDelete =
+async () => {
+try {
+await deleteInstituteTrainer(
+trainerToDelete,
+token
+);
+
+
+    toast.success(
+      "Trainer deleted"
+    );
+
+    fetchTrainers();
+
+    setDeleteModalOpen(false);
+  } catch (e) {
+    toast.error(
+      e.response?.data
+        ?.message ||
+        "Delete failed"
+    );
+  }
+};
+
+const closeModal = () => {
+setIsModalOpen(false);
+setEditingTrainer(null);
+};
+
+const handleSubmit = async (e) => {
+e.preventDefault();
+
+```
+try {
+  const fd = new FormData();
+
+  Object.entries(formData).forEach(
+    ([k, v]) => {
+      if (
+        v !== null &&
+        v !== undefined &&
+        v !== ""
+      ) {
+        fd.append(k, v);
+      }
     }
+  );
 
-    closeModal();
-  };
+  if (editingTrainer) {
+    await updateInstituteTrainer(
+      editingTrainer.id,
+      fd,
+      token
+    );
 
-  const handleApprove = (id) => {
-    dispatch(approveTrainer(id));
-    toast.success("Trainer approved!");
-  };
+    toast.success(
+      "Trainer updated successfully"
+    );
+  } else {
+    await createInstituteTrainer(
+      fd,
+      token
+    );
 
-  const handleReject = (id) => {
-    if (window.confirm("Are you sure you want to reject this trainer?")) {
-      dispatch(rejectTrainer(id));
-      toast.success("Trainer rejected!");
-    }
-  };
+    toast.success(
+      "Trainer created successfully"
+    );
+  }
 
-  const handleSuspend = (id) => {
-    dispatch(suspendTrainer(id));
-    toast.success("Trainer suspended!");
-  };
+  closeModal();
+  fetchTrainers();
 
-  const handleView = (trainer) => {
-    setViewingTrainer(trainer);
-  };
+} catch (e) {
+  toast.error(
+    e.response?.data?.message ||
+      "Operation failed"
+  );
+}
+```
 
-  const handleEdit = (trainer) => {
-    setEditingTrainer(trainer);
-    setFormData({
-      name: trainer.name,
-      email: trainer.email,
-      phone: trainer.phone,
-      skill: trainer.skill,
-      specialty: trainer.specialty,
-      experience: trainer.experience,
-      bio: trainer.bio,
-    });
-    setIsModalOpen(true);
-  };
+};
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this trainer?")) {
-      dispatch(deleteTrainer(id));
-      toast.success("Trainer deleted successfully!");
-    }
-  };
+return ( <div className="space-y-6 animate-slide-up">
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingTrainer(null);
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      skill: "",
-      specialty: "",
-      experience: "",
-      bio: "",
-    });
-  };
+```
+  <div className="flex justify-between items-center">
+    <div>
+      <h1 className="text-3xl font-bold gradient-text">
+        Institute Trainers
+      </h1>
 
-  return (
-    <div className="space-y-6 animate-slide-up">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold gradient-text">Trainers</h1>
-          <p className="text-gray-400 mt-1">
-            Manage instructors and their profiles
-          </p>
-        </div>
+      <p className="text-gray-400 mt-1">
+        Manage institute trainers
+      </p>
+    </div>
+
+    <Button
+      icon={HiPlus}
+      onClick={handleCreate}
+    >
+      Add Trainer
+    </Button>
+  </div>
+
+  <DataTable
+    columns={columns}
+    data={trainers}
+    filterable
+    actions={(row) => (
+      <div className="flex gap-2">
+
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={HiPencil}
+          onClick={() =>
+            handleEdit(row)
+          }
+        />
+
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={HiTrash}
+          className="text-red-400"
+          onClick={() =>
+            handleDeleteClick(
+              row.id
+            )
+          }
+        />
+
       </div>
+    )}
+  />
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={trainers}
-        filterable
-        filterOptions={[
-          { key: "status", value: "approved", label: "Approved" },
-          { key: "status", value: "pending", label: "Pending" },
-          { key: "status", value: "suspended", label: "Suspended" },
-        ]}
-        actions={(row) => (
-          <div className="flex items-center gap-1">
-            {row.status === "pending" && (
-              <>
-                <Button
-                  variant="success"
-                  size="sm"
-                  icon={HiCheck}
-                  onClick={() => handleApprove(row.id)}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  icon={HiX}
-                  onClick={() => handleReject(row.id)}
-                >
-                  Reject
-                </Button>
-              </>
-            )}
-            {row.status === "approved" && (
-              <Button
-                variant="danger"
-                size="sm"
-                icon={HiBan}
-                onClick={() => handleSuspend(row.id)}
-              >
-                Suspend
-              </Button>
-            )}
-            {row.status === "suspended" && (
-              <Button
-                variant="success"
-                size="sm"
-                icon={HiCheck}
-                onClick={() => handleApprove(row.id)}
-              >
-                Reinstate
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={HiEye}
-              onClick={() => handleView(row)}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={HiPencil}
-              onClick={() => handleEdit(row)}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={HiX}
-              onClick={() => handleDelete(row.id)}
-              className="text-red-400 hover:text-red-300"
-            />
-          </div>
-        )}
+  <Modal
+    isOpen={isModalOpen}
+    onClose={closeModal}
+    title={
+      editingTrainer
+        ? "Edit Trainer"
+        : "Add Trainer"
+    }
+  >
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+    >
+
+      <FormInput
+        label="Full Name"
+        value={
+          formData.full_name
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            full_name:
+              e.target.value,
+          })
+        }
       />
 
-      {/* View Trainer Modal */}
-      <Modal
-        isOpen={!!viewingTrainer}
-        onClose={() => setViewingTrainer(null)}
-        title="Trainer Details"
-        size="lg"
-      >
-        {viewingTrainer && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 pb-6 border-b border-white/10">
-              <div className="w-20 h-20 rounded-2xl gradient-bg flex items-center justify-center">
-                <span className="text-white font-bold text-2xl">
-                  {viewingTrainer.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold">{viewingTrainer.name}</h3>
-                <p className="text-gray-400">
-                  {viewingTrainer.skill} • {viewingTrainer.specialty}
-                </p>
-                <Badge variant={viewingTrainer.status} className="mt-2">
-                  {viewingTrainer.status}
-                </Badge>
-              </div>
-            </div>
+      <FormInput
+        label="Email"
+        value={formData.email}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            email:
+              e.target.value,
+          })
+        }
+      />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="glass-effect rounded-xl p-4">
-                <p className="text-sm text-gray-400">Email</p>
-                <p className="font-medium">{viewingTrainer.email}</p>
-              </div>
-              <div className="glass-effect rounded-xl p-4">
-                <p className="text-sm text-gray-400">Phone</p>
-                <p className="font-medium">{viewingTrainer.phone}</p>
-              </div>
-              <div className="glass-effect rounded-xl p-4">
-                <p className="text-sm text-gray-400">Experience</p>
-                <p className="font-medium">{viewingTrainer.experience}</p>
-              </div>
-              <div className="glass-effect rounded-xl p-4">
-                <p className="text-sm text-gray-400">Rating</p>
-                <div className="flex items-center gap-1">
-                  <HiStar className="w-5 h-5 star-rating" />
-                  <span className="font-bold text-lg">
-                    {viewingTrainer.rating}
-                  </span>
-                </div>
-              </div>
-              <div className="glass-effect rounded-xl p-4">
-                <p className="text-sm text-gray-400">Total Students</p>
-                <p className="font-bold text-lg">{viewingTrainer.students}</p>
-              </div>
-              <div className="glass-effect rounded-xl p-4">
-                <p className="text-sm text-gray-400">Joined Date</p>
-                <p className="font-medium">{viewingTrainer.joinDate}</p>
-              </div>
-            </div>
+      <FormInput
+        label="Phone Number"
+        value={
+          formData.phone_number
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            phone_number:
+              e.target.value,
+          })
+        }
+      />
 
-            <div className="glass-effect rounded-xl p-4">
-              <p className="text-sm text-gray-400 mb-2">Bio</p>
-              <p className="text-sm leading-relaxed">{viewingTrainer.bio}</p>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <FormInput
+        label="Experience Years"
+        type="number"
+        value={
+          formData.experience_years
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            experience_years:
+              e.target.value,
+          })
+        }
+      />
 
-      {/* Edit Trainer Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} title="Edit Trainer">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <FormInput
-            label="Full Name"
-            name="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
+      <FormInput
+        label="Bio"
+        type="textarea"
+        value={formData.bio}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            bio:
+              e.target.value,
+          })
+        }
+      />
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              required
-            />
-            <FormInput
-              label="Phone"
-              name="phone"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-            />
-          </div>
+      <FormInput
+        label="Specialty"
+        value={
+          formData.specialty
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            specialty:
+              e.target.value,
+          })
+        }
+      />
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="Skill"
-              name="skill"
-              value={formData.skill}
-              onChange={(e) =>
-                setFormData({ ...formData, skill: e.target.value })
-              }
-              required
-            />
-            <FormInput
-              label="Specialty"
-              name="specialty"
-              value={formData.specialty}
-              onChange={(e) =>
-                setFormData({ ...formData, specialty: e.target.value })
-              }
-            />
-          </div>
+      <FormInput
+        label="Languages"
+        value={
+          formData.languages
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            languages:
+              e.target.value,
+          })
+        }
+      />
 
-          <FormInput
-            label="Experience"
-            name="experience"
-            value={formData.experience}
-            onChange={(e) =>
-              setFormData({ ...formData, experience: e.target.value })
-            }
-            placeholder="e.g., 8 years"
-          />
+      <FormInput
+        label="Skills"
+        type="textarea"
+        value={formData.skills}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            skills:
+              e.target.value,
+          })
+        }
+      />
 
-          <FormInput
-            label="Bio"
-            name="bio"
-            type="textarea"
-            value={formData.bio}
-            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-            placeholder="Tell us about yourself..."
-          />
+      <FormInput
+        label="Certifications"
+        type="textarea"
+        value={
+          formData.certifications
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            certifications:
+              e.target.value,
+          })
+        }
+      />
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="secondary" type="button" onClick={closeModal}>
-              Cancel
-            </Button>
-            <Button type="submit">Update Trainer</Button>
-          </div>
-        </form>
-      </Modal>
+      <FormInput
+        label="Schedule"
+        type="textarea"
+        value={
+          formData.schedule
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            schedule:
+              e.target.value,
+          })
+        }
+      />
+
+      <FormInput
+        label="UPI ID"
+        value={formData.upi_id}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            upi_id:
+              e.target.value,
+          })
+        }
+      />
+
+      <FormInput
+        label="Total Students"
+        type="number"
+        value={
+          formData.total_students
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            total_students:
+              e.target.value,
+          })
+        }
+      />
+
+      <FormInput
+        label="Max Students"
+        type="number"
+        value={
+          formData.max_students
+        }
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            max_students:
+              e.target.value,
+          })
+        }
+      />
+
+      <FormInput
+        label="Profile Image"
+        type="file"
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            profile_image:
+              e.target.files?.[0],
+          })
+        }
+      />
+
+      <FormInput
+        label="Certificate"
+        type="file"
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            certificate:
+              e.target.files?.[0],
+          })
+        }
+      />
+
+      <FormInput
+        label="QR Image"
+        type="file"
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            qr_image:
+              e.target.files?.[0],
+          })
+        }
+      />
+
+      <div className="flex justify-end gap-3 pt-4">
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={closeModal}
+        >
+          Cancel
+        </Button>
+
+        <Button type="submit">
+          {editingTrainer
+            ? "Update Trainer"
+            : "Create Trainer"}
+        </Button>
+
+      </div>
+    </form>
+  </Modal>
+
+  <Modal
+    isOpen={deleteModalOpen}
+    onClose={() =>
+      setDeleteModalOpen(false)
+    }
+    title="Delete Trainer"
+  >
+    <div className="space-y-4">
+      <p className="text-gray-300">
+        Are you sure you want to
+        delete this trainer?
+      </p>
+
+      <div className="flex justify-end gap-3">
+        <Button
+          variant="secondary"
+          onClick={() =>
+            setDeleteModalOpen(
+              false
+            )
+          }
+        >
+          Cancel
+        </Button>
+
+        <Button
+          variant="danger"
+          onClick={
+            confirmDelete
+          }
+        >
+          Delete
+        </Button>
+      </div>
     </div>
-  );
+  </Modal>
+
+</div>
+
+
+);
 }
